@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import Schematic from './Schematic';
+import LiveCode from './LiveCode';
 
 const BuoyScene = dynamic(() => import('./BuoyScene'), {
   ssr: false,
@@ -76,48 +77,6 @@ function useContinuousBuzzer(active: boolean) {
       oscRef.current = null; gainRef.current = null; ctxRef.current = null;
     }
   }, [active]);
-}
-
-function LiveCode({ dist, ph, turb, tds, od, temp, alert, pumping, amostras }: {
-  dist: number; ph: number; turb: number; tds: number; od: number; temp: number;
-  alert: boolean; pumping: boolean; amostras: number;
-}) {
-  const line = alert ? 'ALERT' : pumping ? 'eDNA' : 'RUN';
-  return (
-    <div className="rounded-xl border border-white/10 bg-[#0a0f14] overflow-hidden font-mono text-[11px] leading-relaxed">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/[0.03]">
-        <span className="text-white/40">sketch.ino · live</span>
-        <span className={clsx('text-[10px] px-2 py-0.5 rounded', alert ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal')}>{line}</span>
-      </div>
-      <pre className="p-3 overflow-x-auto text-white/70 max-h-[360px] sm:max-h-[420px] overflow-y-auto">
-{`void loop() {
-  float dist = lerSonar();       // ${dist} cm
-  float ph   = lerPH();          // ${ph.toFixed(2)}
-  float turb = lerTurbidez();    // ${Math.round(turb)} NTU
-  float tds  = lerTDS();         // ${Math.round(tds)} ppm
-  float od   = lerOD();          // ${od.toFixed(1)} mg/L
-  float temp = lerTemp();        // ${temp.toFixed(1)} C
-
-  if (dist < PERIMETRO) {        // ${alert ? 'TRUE' : 'false'}
-    digitalWrite(LED, HIGH);${alert ? '     // << LED ON' : ''}
-    digitalWrite(BUZZER, HIGH);${alert ? '  // << BUZZER' : ''}
-    logAlerta(dist);
-  } else {
-    digitalWrite(LED, LOW);
-    digitalWrite(BUZZER, LOW);
-  }
-
-  if (horaDeColetar()) {         // amostras: ${amostras}
-    acionarBomba(1800);${pumping ? '      // << BOMBA' : ''}
-  }
-
-  gravarSD(dist, ph, turb, tds, od, temp);
-  enviarWiFi();
-  delay(3000);
-}`}
-      </pre>
-    </div>
-  );
 }
 
 export default function Dashboard() {
@@ -316,8 +275,26 @@ export default function Dashboard() {
               <Schematic alert={alert} pumping={pumping} />
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button onClick={coletar} disabled={pumping} className="font-mono text-[11px] px-3 py-1.5 rounded-md bg-teal/20 text-teal border border-teal/30 disabled:opacity-40">{pumping ? 'Bomba...' : 'Testar eDNA'}</button>
-                <a href="https://github.com/banana-eletrizante/blue-brilliant" target="_blank" rel="noreferrer" className="font-mono text-[11px] text-teal underline">github.com/banana-eletrizante/blue-brilliant</a>
+                <a
+                  href="https://github.com/banana-eletrizante/blue-brilliant"
+                  target="_blank"
+                  rel="noreferrer"
+                  title="GitHub do projeto"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-white/15 bg-white/5 text-sand hover:bg-white/10 hover:border-teal/40 transition"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.53 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                  </svg>
+                </a>
               </div>
+              <a
+                href="https://andre-rosler.com"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block font-mono text-[11px] text-white/40 hover:text-teal transition"
+              >
+                andre-rosler.com — conheça o autor
+              </a>
             </div>
             <div className="min-w-0">
               <h2 className="font-display text-base sm:text-lg font-semibold text-sand mb-3">Codigo ao vivo</h2>
