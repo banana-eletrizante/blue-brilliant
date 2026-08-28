@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Blue Brilliant — Boia de Monitoramento e Detecção de Espécies Invasoras',
+  title: 'Blue Brilliant — Peixonautas',
   description:
-    'Boia inteligente para delimitação de biodiversidade e detecção precoce de espécies invasoras. Sensoriamento físico-químico, sonar de perímetro e auto-amostrador de eDNA.',
+    'Blue Brilliant by Peixonautas. Boia inteligente para delimitacao de biodiversidade e deteccao precoce de especies invasoras.',
   openGraph: {
-    title: 'Blue Brilliant',
-    description: 'Monitorar o que não se vê. Proteger o que ainda está vivo.',
+    title: 'Blue Brilliant — Peixonautas',
+    description: 'Monitorar o que nao se ve. Proteger o que ainda esta vivo.',
     type: 'website',
   },
 };
