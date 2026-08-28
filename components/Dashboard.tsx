@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import Schematic from './Schematic';
-import Flowchart from './Flowchart';
 
 const BuoyScene = dynamic(() => import('./BuoyScene'), {
   ssr: false,
@@ -16,7 +15,7 @@ const BuoyScene = dynamic(() => import('./BuoyScene'), {
 });
 
 type Preset = 'normal' | 'poluida' | 'algas' | 'acida';
-type Tab = 'sim' | 'schema' | 'cycle' | 'files';
+type Tab = 'sim' | 'schema';
 type LogLine = { t: string; msg: string; warn: boolean };
 type Sample = { t: string; dist: number; ph: number; turb: number; tds: number; od: number; temp: number; alert: boolean };
 
@@ -39,21 +38,97 @@ function barColor(v: number, min: number, ok: [number, number], max: number) {
   return 'bg-teal';
 }
 
-function playBuzzer() {
-  try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = 880;
-    gain.gain.value = 0.08;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-    osc.stop(ctx.currentTime + 0.2);
-    setTimeout(() => ctx.close(), 300);
-  } catch { /* blocked until gesture */ }
+function useContinuousBuzzer(active: boolean) {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const oscRef = useRef<OscillatorNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+
+  useEffect(() => {
+    if (active) {
+      try {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new Ctx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.06;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        ctxRef.current = ctx;
+        oscRef.current = osc;
+        gainRef.current = gain;
+
+        let on = true;
+        const pulse = setInterval(() => {
+          if (!gainRef.current || !ctxRef.current) return;
+          on = !on;
+          gainRef.current.gain.setTargetAtTime(on ? 0.06 : 0.001, ctxRef.current.currentTime, 0.02);
+        }, 250);
+        return () => {
+          clearInterval(pulse);
+          try { osc.stop(); ctx.close(); } catch { /* */ }
+          oscRef.current = null;
+          gainRef.current = null;
+          ctxRef.current = null;
+        };
+      } catch {
+        return;
+      }
+    } else {
+      try { oscRef.current?.stop(); ctxRef.current?.close(); } catch { /* */ }
+      oscRef.current = null;
+      gainRef.current = null;
+      ctxRef.current = null;
+    }
+  }, [active]);
+}
+
+function LiveCode({
+  dist, ph, turb, tds, od, temp, alert, pumping, amostras,
+}: {
+  dist: number; ph: number; turb: number; tds: number; od: number; temp: number;
+  alert: boolean; pumping: boolean; amostras: number;
+}) {
+  const line = alert ? 'ALERT' : pumping ? 'eDNA' : 'OK';
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#0a0f14] overflow-hidden font-mono text-[11px] leading-relaxed">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/[0.03]">
+        <span className="text-white/40">sketch.ino · live</span>
+        <span className={clsx('text-[10px] px-2 py-0.5 rounded', alert ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal')}>
+          {line}
+        </span>
+      </div>
+      <pre className="p-3 overflow-x-auto text-white/70 max-h-[420px] overflow-y-auto">
+{`void loop() {
+  float dist = lerSonar();       // ${dist} cm
+  float ph   = lerPH();          // ${ph.toFixed(2)}
+  float turb = lerTurbidez();    // ${Math.round(turb)} NTU
+  float tds  = lerTDS();         // ${Math.round(tds)} ppm
+  float od   = lerOD();          // ${od.toFixed(1)} mg/L
+  float temp = lerTemp();        // ${temp.toFixed(1)} C
+
+  if (dist < PERIMETRO) {        // ${alert ? 'TRUE' : 'false'}
+    digitalWrite(LED, HIGH);${alert ? '     // << LED ON' : ''}
+    digitalWrite(BUZZER, HIGH);${alert ? '  // << BUZZER' : ''}
+    logAlerta(dist);
+  } else {
+    digitalWrite(LED, LOW);
+    digitalWrite(BUZZER, LOW);
+  }
+
+  if (horaDeColetar()) {         // amostras: ${amostras}
+    acionarBomba(1800);${pumping ? '      // << BOMBA' : ''}
+  }
+
+  gravarSD(dist, ph, turb, tds, od, temp);
+  enviarWiFi();                  // Adafruit IO
+  delay(3000);
+}`}
+      </pre>
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -71,26 +146,25 @@ export default function Dashboard() {
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [samples, setSamples] = useState<Sample[]>([]);
   const [tab, setTab] = useState<Tab>('sim');
-  const [soundOn, setSoundOn] = useState(true);
   const [lat] = useState(-23.9608);
   const [lng] = useState(-46.3336);
-  const wasAlert = useRef(false);
 
   const perimetro = 60;
   const alert = dist < perimetro;
+
+  useContinuousBuzzer(alert);
 
   const addLog = useCallback((msg: string, warn = false) => {
     const t = new Date().toLocaleTimeString('pt-BR');
     setLogs((prev) => [{ t, msg, warn }, ...prev].slice(0, 12));
   }, []);
 
+  const prevAlert = useRef(false);
   useEffect(() => {
-    if (alert && !wasAlert.current && soundOn) {
-      playBuzzer();
-      addLog('ALERTA perimetro', true);
-    }
-    wasAlert.current = alert;
-  }, [alert, soundOn, addLog]);
+    if (alert && !prevAlert.current) addLog('ALERTA perimetro', true);
+    if (!alert && prevAlert.current) addLog('Perimetro livre');
+    prevAlert.current = alert;
+  }, [alert, addLog]);
 
   const coletar = useCallback(() => {
     if (pumping) return;
@@ -180,13 +254,6 @@ export default function Dashboard() {
     { label: 'Temp', value: temp.toFixed(1), unit: 'C', pct: pct(temp, 10, 35), color: 'bg-teal' },
   ];
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'sim', label: 'Simulacao' },
-    { id: 'schema', label: 'Esquema' },
-    { id: 'cycle', label: 'Ciclo' },
-    { id: 'files', label: 'Arquivos' },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-white/10 px-4 sm:px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-between gap-3">
@@ -201,15 +268,9 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <nav className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/10">
-            {tabs.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === t.id ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>
-                {t.label}
-              </button>
-            ))}
+            <button onClick={() => setTab('sim')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'sim' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Simulacao</button>
+            <button onClick={() => setTab('schema')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'schema' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Esquema + Codigo</button>
           </nav>
-          <button onClick={() => setSoundOn((v) => !v)} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-full border transition', soundOn ? 'border-teal/40 text-teal' : 'border-white/10 text-white/40')} title="Som do buzzer">
-            {soundOn ? 'Som ON' : 'Som OFF'}
-          </button>
           <div className={clsx('font-mono text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border', alert ? 'border-coral/60 text-coral' : 'border-white/10 text-white/50')}>
             <span className={clsx('w-1.5 h-1.5 rounded-full', alert ? 'bg-coral animate-pulse' : 'bg-teal')} />
             {alert ? 'Alerta' : 'OK'}
@@ -240,7 +301,7 @@ export default function Dashboard() {
                   <span className="font-mono text-sm text-sand">{dist} cm</span>
                 </div>
                 <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-full" />
-                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta — LED + buzzer' : 'Perimetro livre'}</p>
+                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta — LED + buzzer continuo' : 'Perimetro livre'}</p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
@@ -277,40 +338,24 @@ export default function Dashboard() {
         )}
 
         {tab === 'schema' && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-display text-lg font-semibold text-sand">Esquema</h2>
-              <a href="https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json" className="font-mono text-[11px] text-teal underline" target="_blank" rel="noreferrer">diagram.json · Wokwi</a>
+          <div className="grid lg:grid-cols-2 gap-5">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display text-lg font-semibold text-sand">Esquema</h2>
+                <div className="flex items-center gap-3">
+                  <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-28" title="Sonar" />
+                  <span className={clsx('font-mono text-[11px]', alert ? 'text-coral' : 'text-white/40')}>{dist} cm</span>
+                </div>
+              </div>
+              <Schematic alert={alert} pumping={pumping} />
+              <div className="mt-3 flex gap-2">
+                <button onClick={coletar} disabled={pumping} className="font-mono text-[11px] px-3 py-1.5 rounded-md bg-teal/20 text-teal border border-teal/30 disabled:opacity-40">{pumping ? 'Bomba...' : 'Testar eDNA'}</button>
+              </div>
             </div>
-            <Schematic alert={alert} pumping={pumping} />
-          </div>
-        )}
-
-        {tab === 'cycle' && (
-          <div>
-            <h2 className="font-display text-lg font-semibold text-sand mb-4">Ciclo</h2>
-            <Flowchart />
-          </div>
-        )}
-
-        {tab === 'files' && (
-          <div>
-            <h2 className="font-display text-lg font-semibold text-sand mb-4">Arquivos</h2>
-            <div className="grid sm:grid-cols-2 gap-3 max-w-2xl">
-              {[
-                { name: 'sketch.ino', desc: 'Firmware ESP32', href: 'https://github.com/banana-eletrizante/blue-brilliant/tree/main/firmware' },
-                { name: 'diagram.json', desc: 'Circuito Wokwi', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json' },
-                { name: 'ROTEIRO_PITCH.md', desc: 'Roteiro 3-4 min', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/docs/ROTEIRO_PITCH.md' },
-                { name: 'GitHub', desc: 'Codigo', href: 'https://github.com/banana-eletrizante/blue-brilliant' },
-              ].map((f) => (
-                <a key={f.name} href={f.href} target="_blank" rel="noreferrer" className="flex gap-3 p-4 rounded-xl border border-white/10 bg-navy/60 hover:border-teal/40 transition">
-                  <span className="text-teal font-mono text-xs">↗</span>
-                  <div>
-                    <div className="font-mono text-sm text-sand">{f.name}</div>
-                    <div className="font-mono text-[11px] text-white/40">{f.desc}</div>
-                  </div>
-                </a>
-              ))}
+            <div>
+              <h2 className="font-display text-lg font-semibold text-sand mb-3">Codigo ao vivo</h2>
+              <LiveCode dist={dist} ph={ph} turb={turb} tds={tds} od={od} temp={temp} alert={alert} pumping={pumping} amostras={amostras} />
+              <p className="font-mono text-[10px] text-white/30 mt-2">Valores atualizam com a simulacao · arraste o sonar acima</p>
             </div>
           </div>
         )}
