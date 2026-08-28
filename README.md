@@ -1,47 +1,43 @@
-# Blue Brilliant
+# Blue Brilliant — Peixonautas
 
-**Boia inteligente para delimitação de biodiversidade e detecção precoce de espécies invasoras.**
+Boia de monitoramento para delimitar perímetro na água e ajudar na detecção precoce de espécies invasoras.
 
-Site interativo com:
-- Visualização **3D** da boia (React Three Fiber)
-- Simulação em tempo real de sensores (pH, turbidez, TDS, OD, temperatura)
-- Sonar de perímetro com alerta visual
-- Auto-amostrador de eDNA
-- Telemetria simulada
+Três frentes no mesmo equipamento:
 
-## Stack
+1. Sensores de qualidade da água (pH, turbidez, TDS, oxigênio, temperatura)
+2. Sonar de perímetro com alerta local (LED + buzzer)
+3. Coleta automática de amostra para eDNA (bomba + filtro)
 
-- **Next.js 14** (App Router)
-- **React Three Fiber** + Drei (3D)
-- **Tailwind CSS**
-- TypeScript
+Projeto do grupo **Peixonautas** — Parque Tecnológico de Santos.
 
-## Rodar localmente
+## Site
+
+Simulação interativa (3D + sensores + esquema):
+
+https://blue-brilliant.vercel.app
+
+## Firmware (ESP32)
+
+Arquivo principal:
+
+- `firmware/sketch.ino` — leituras, média do sonar, eDNA, log no microSD, WiFi/Adafruit IO
+- `firmware/diagram.json` — circuito para importar no [Wokwi](https://wokwi.com/projects/new/esp32)
+
+Bibliotecas usadas no Arduino IDE / Wokwi: TinyGPSPlus, OneWire, DallasTemperature.
+
+## Rodar o site
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000).
+## Estrutura
 
-## Deploy na Vercel
-
-1. Acesse [vercel.com](https://vercel.com) e faça login com GitHub
-2. **Add New Project** → selecione `blue-brilliant`
-3. Framework: Next.js (detectado automaticamente)
-4. Deploy
-
-Ou via CLI:
-
-```bash
-npx vercel
+```
+app/            Next.js
+components/     3D, dashboard, esquema
+firmware/       ESP32 + Wokwi
 ```
 
-## Projeto
-
-- Firmware ESP32 (`sketch.ino`)
-- Circuito Wokwi (`diagram.json`)
-- Relatório técnico (`relatorio.docx`)
-
-**Blue Brilliant** · Parque Tecnológico de Santos · 2026
+Credenciais de WiFi e Adafruit IO ficam no topo do `sketch.ino` — trocar antes de gravar na placa.
