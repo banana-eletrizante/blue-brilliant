@@ -14,7 +14,7 @@ interface BuoySceneProps {
 function Ocean() {
   const mesh = useRef<THREE.Mesh>(null);
   const geo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(14, 14, 64, 64);
+    const g = new THREE.PlaneGeometry(16, 16, 80, 80);
     g.rotateX(-Math.PI / 2);
     return g;
   }, []);
@@ -239,7 +239,7 @@ function SceneContent({ alert, pumping }: BuoySceneProps) {
 
 export default function BuoyScene({ alert, pumping, dist }: BuoySceneProps) {
   return (
-    <div className="relative w-full h-[440px] md:h-[540px] lg:h-[580px] rounded-xl overflow-hidden border border-white/10 bg-[#040e18]">
+    <div className="relative w-full h-[360px] sm:h-[440px] md:h-[520px] lg:h-[580px] rounded-xl overflow-hidden border border-white/10 bg-[#040e18]">
       <Canvas shadows camera={{ position: [3.6, 2.2, 4.0], fov: 36 }} gl={{ antialias: true, alpha: false }} dpr={[1, 1.8]}>
         <SceneContent alert={alert} pumping={pumping} dist={dist} />
       </Canvas>
