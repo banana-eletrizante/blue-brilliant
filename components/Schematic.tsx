@@ -27,7 +27,7 @@ export default function Schematic({ alert, pumping }: Props) {
         </defs>
 
         <path d="M410 95 H500" stroke={wire(hot('sonar'), '#E3A857')} strokeWidth={sw(hot('sonar'))} fill="none" filter={hot('sonar') ? 'url(#glow)' : undefined} />
-        <text x="450" y="88" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D5/D18</text>
+        <text x="450" y="88" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D25/D26</text>
 
         <path d="M410 155 H530" stroke={wire(hot('led'), '#E0653B')} strokeWidth={sw(hot('led'))} fill="none" filter={hot('led') ? 'url(#glow)' : undefined} />
         <text x="460" y="148" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D27</text>
