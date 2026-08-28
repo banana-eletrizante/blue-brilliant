@@ -8,7 +8,7 @@ import Schematic from './Schematic';
 const BuoyScene = dynamic(() => import('./BuoyScene'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[440px] md:h-[540px] rounded-xl bg-[#040e18] border border-white/10 flex items-center justify-center">
+    <div className="w-full h-[360px] sm:h-[440px] md:h-[520px] rounded-xl bg-[#040e18] border border-white/10 flex items-center justify-center">
       <span className="font-mono text-sm text-white/40 animate-pulse">Carregando 3D...</span>
     </div>
   ),
@@ -59,7 +59,6 @@ function useContinuousBuzzer(active: boolean) {
         ctxRef.current = ctx;
         oscRef.current = osc;
         gainRef.current = gain;
-
         let on = true;
         const pulse = setInterval(() => {
           if (!gainRef.current || !ctxRef.current) return;
@@ -69,38 +68,28 @@ function useContinuousBuzzer(active: boolean) {
         return () => {
           clearInterval(pulse);
           try { osc.stop(); ctx.close(); } catch { /* */ }
-          oscRef.current = null;
-          gainRef.current = null;
-          ctxRef.current = null;
+          oscRef.current = null; gainRef.current = null; ctxRef.current = null;
         };
-      } catch {
-        return;
-      }
+      } catch { return; }
     } else {
       try { oscRef.current?.stop(); ctxRef.current?.close(); } catch { /* */ }
-      oscRef.current = null;
-      gainRef.current = null;
-      ctxRef.current = null;
+      oscRef.current = null; gainRef.current = null; ctxRef.current = null;
     }
   }, [active]);
 }
 
-function LiveCode({
-  dist, ph, turb, tds, od, temp, alert, pumping, amostras,
-}: {
+function LiveCode({ dist, ph, turb, tds, od, temp, alert, pumping, amostras }: {
   dist: number; ph: number; turb: number; tds: number; od: number; temp: number;
   alert: boolean; pumping: boolean; amostras: number;
 }) {
-  const line = alert ? 'ALERT' : pumping ? 'eDNA' : 'OK';
+  const line = alert ? 'ALERT' : pumping ? 'eDNA' : 'RUN';
   return (
     <div className="rounded-xl border border-white/10 bg-[#0a0f14] overflow-hidden font-mono text-[11px] leading-relaxed">
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/[0.03]">
         <span className="text-white/40">sketch.ino · live</span>
-        <span className={clsx('text-[10px] px-2 py-0.5 rounded', alert ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal')}>
-          {line}
-        </span>
+        <span className={clsx('text-[10px] px-2 py-0.5 rounded', alert ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal')}>{line}</span>
       </div>
-      <pre className="p-3 overflow-x-auto text-white/70 max-h-[420px] overflow-y-auto">
+      <pre className="p-3 overflow-x-auto text-white/70 max-h-[360px] sm:max-h-[420px] overflow-y-auto">
 {`void loop() {
   float dist = lerSonar();       // ${dist} cm
   float ph   = lerPH();          // ${ph.toFixed(2)}
@@ -123,7 +112,7 @@ function LiveCode({
   }
 
   gravarSD(dist, ph, turb, tds, od, temp);
-  enviarWiFi();                  // Adafruit IO
+  enviarWiFi();
   delay(3000);
 }`}
       </pre>
@@ -151,7 +140,6 @@ export default function Dashboard() {
 
   const perimetro = 60;
   const alert = dist < perimetro;
-
   useContinuousBuzzer(alert);
 
   const addLog = useCallback((msg: string, warn = false) => {
@@ -180,10 +168,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setNextCycle((n) => {
-        if (n <= 1) { coletar(); return 60; }
-        return n - 1;
-      });
+      setNextCycle((n) => { if (n <= 1) { coletar(); return 60; } return n - 1; });
     }, 1000);
     return () => clearInterval(id);
   }, [coletar]);
@@ -202,9 +187,7 @@ export default function Dashboard() {
   useEffect(() => {
     const id = setInterval(() => {
       const t = new Date().toLocaleTimeString('pt-BR');
-      setSamples((prev) =>
-        [{ t, dist, ph, turb, tds, od, temp, alert: dist < perimetro }, ...prev].slice(0, 200)
-      );
+      setSamples((prev) => [{ t, dist, ph, turb, tds, od, temp, alert: dist < perimetro }, ...prev].slice(0, 200));
       addLog(`d=${dist}cm pH=${ph.toFixed(1)} turb=${Math.round(turb)}`, dist < perimetro);
     }, 5000);
     return () => clearInterval(id);
@@ -220,27 +203,18 @@ export default function Dashboard() {
   };
 
   const resetAll = () => {
-    setLogs([]);
-    setSamples([]);
-    setAmostras(0);
-    setUltimaColeta('-');
-    setNextCycle(60);
-    setDist(120);
+    setLogs([]); setSamples([]); setAmostras(0); setUltimaColeta('-'); setNextCycle(60); setDist(120);
     applyPreset('normal');
     addLog('Reset completo');
   };
 
   const exportCsv = () => {
     const header = 'time,dist_cm,ph,turb_ntu,tds_ppm,od_mgL,temp_C,alert\n';
-    const rows = samples
-      .map((s) => `${s.t},${s.dist},${s.ph.toFixed(2)},${s.turb.toFixed(1)},${s.tds.toFixed(0)},${s.od.toFixed(2)},${s.temp.toFixed(1)},${s.alert ? 1 : 0}`)
-      .join('\n');
+    const rows = samples.map((s) => `${s.t},${s.dist},${s.ph.toFixed(2)},${s.turb.toFixed(1)},${s.tds.toFixed(0)},${s.od.toFixed(2)},${s.temp.toFixed(1)},${s.alert ? 1 : 0}`).join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `blue-brilliant-${Date.now()}.csv`;
-    a.click();
+    a.href = url; a.download = `blue-brilliant-${Date.now()}.csv`; a.click();
     URL.revokeObjectURL(url);
     addLog(`CSV exportado (${samples.length} linhas)`);
   };
@@ -256,56 +230,48 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-white/10 px-4 sm:px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-teal/20 border border-teal/40 flex items-center justify-center shrink-0">
-            <span className="font-mono text-teal text-xs font-bold">BB</span>
-          </div>
+      <header className="border-b border-white/10 px-3 sm:px-6 lg:px-10 py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <img src="/icon.svg" alt="Blue Brilliant" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0" />
           <div className="min-w-0">
-            <h1 className="font-display text-base sm:text-lg font-semibold text-sand truncate">Blue Brilliant</h1>
-            <p className="font-mono text-[10px] text-white/40 hidden sm:block">Monitoramento · perimetro · eDNA</p>
+            <h1 className="font-display text-sm sm:text-base md:text-lg font-semibold text-sand leading-tight truncate">Blue Brilliant</h1>
+            <p className="font-mono text-[10px] sm:text-[11px] text-teal tracking-wide">Peixonautas</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <nav className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/10">
-            <button onClick={() => setTab('sim')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'sim' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Simulacao</button>
-            <button onClick={() => setTab('schema')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'schema' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Esquema + Codigo</button>
-          </nav>
-          <div className={clsx('font-mono text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border', alert ? 'border-coral/60 text-coral' : 'border-white/10 text-white/50')}>
-            <span className={clsx('w-1.5 h-1.5 rounded-full', alert ? 'bg-coral animate-pulse' : 'bg-teal')} />
-            {alert ? 'Alerta' : 'OK'}
-          </div>
-        </div>
+        <nav className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/10">
+          <button onClick={() => setTab('sim')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'sim' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Simulacao</button>
+          <button onClick={() => setTab('schema')} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === 'schema' ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>Esquema</button>
+        </nav>
       </header>
 
-      <main className="flex-1 px-4 sm:px-6 lg:px-10 py-5">
+      <main className="flex-1 px-3 sm:px-6 lg:px-10 py-4 sm:py-5">
         {tab === 'sim' && (
-          <div className="grid lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-7">
+          <div className="grid lg:grid-cols-12 gap-4 sm:gap-5">
+            <div className="lg:col-span-7 min-w-0">
               <BuoyScene alert={alert} pumping={pumping} dist={dist} />
             </div>
-            <div className="lg:col-span-5 flex flex-col gap-3">
+            <div className="lg:col-span-5 flex flex-col gap-3 min-w-0">
               <div className="grid grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden">
                 {metrics.map((m) => (
-                  <div key={m.label} className="bg-navy-deep p-3">
-                    <div className="font-mono text-[10px] text-white/40 uppercase">{m.label}</div>
-                    <div className="font-mono text-lg font-medium text-sand mt-0.5">{m.value}{m.unit && <span className="text-[11px] text-white/35 ml-0.5">{m.unit}</span>}</div>
-                    <div className="h-0.5 bg-white/10 mt-2 rounded overflow-hidden"><div className={clsx('h-full', m.color)} style={{ width: `${m.pct}%` }} /></div>
+                  <div key={m.label} className="bg-navy-deep p-2.5 sm:p-3">
+                    <div className="font-mono text-[9px] sm:text-[10px] text-white/40 uppercase">{m.label}</div>
+                    <div className="font-mono text-base sm:text-lg font-medium text-sand mt-0.5">{m.value}{m.unit && <span className="text-[10px] sm:text-[11px] text-white/35 ml-0.5">{m.unit}</span>}</div>
+                    <div className="h-0.5 bg-white/10 mt-1.5 sm:mt-2 rounded overflow-hidden"><div className={clsx('h-full', m.color)} style={{ width: `${m.pct}%` }} /></div>
                   </div>
                 ))}
               </div>
 
-              <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
+              <div className="border border-white/10 rounded-xl p-3 sm:p-4 bg-navy/50">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-mono text-[11px] text-amber">Sonar · {perimetro} cm</span>
                   <span className="font-mono text-sm text-sand">{dist} cm</span>
                 </div>
                 <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-full" />
-                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta — LED + buzzer continuo' : 'Perimetro livre'}</p>
+                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Perimetro invadido — buzzer' : 'Perimetro livre'}</p>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="border border-white/10 rounded-xl p-3 sm:p-4 bg-navy/50">
                   <span className="font-mono text-[11px] text-amber block mb-2">Agua</span>
                   <div className="flex flex-wrap gap-1.5">
                     {(Object.keys(PRESETS) as Preset[]).map((key) => (
@@ -313,7 +279,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
-                <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
+                <div className="border border-white/10 rounded-xl p-3 sm:p-4 bg-navy/50">
                   <span className="font-mono text-[11px] text-amber block mb-2">eDNA</span>
                   <div className="font-mono text-[11px] text-white/50 space-y-1 mb-3">
                     <div>Amostras: <span className="text-sand">{amostras}</span></div>
@@ -329,41 +295,40 @@ export default function Dashboard() {
                 <button onClick={resetAll} className="font-mono text-[11px] px-3 py-2 rounded-md border border-white/10 text-white/50 hover:text-coral hover:border-coral/40 transition">Reset</button>
               </div>
 
-              <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-28 overflow-y-auto flex-1">
+              <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-24 sm:max-h-28 overflow-y-auto">
                 {logs.map((l, i) => (<div key={i} className={clsx('py-0.5', l.warn ? 'text-coral' : 'text-teal/80')}>[{l.t}] {l.msg}</div>))}
               </div>
-              <p className="font-mono text-[10px] text-white/30">{lat.toFixed(4)}, {lng.toFixed(4)} · Santos</p>
+              <p className="font-mono text-[10px] text-white/30">{lat.toFixed(4)}, {lng.toFixed(4)} · Santos · Peixonautas</p>
             </div>
           </div>
         )}
 
         {tab === 'schema' && (
-          <div className="grid lg:grid-cols-2 gap-5">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-lg font-semibold text-sand">Esquema</h2>
-                <div className="flex items-center gap-3">
-                  <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-28" title="Sonar" />
+          <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h2 className="font-display text-base sm:text-lg font-semibold text-sand">Esquema</h2>
+                <div className="flex items-center gap-2">
+                  <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-24 sm:w-28" title="Sonar" />
                   <span className={clsx('font-mono text-[11px]', alert ? 'text-coral' : 'text-white/40')}>{dist} cm</span>
                 </div>
               </div>
               <Schematic alert={alert} pumping={pumping} />
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3">
                 <button onClick={coletar} disabled={pumping} className="font-mono text-[11px] px-3 py-1.5 rounded-md bg-teal/20 text-teal border border-teal/30 disabled:opacity-40">{pumping ? 'Bomba...' : 'Testar eDNA'}</button>
               </div>
             </div>
-            <div>
-              <h2 className="font-display text-lg font-semibold text-sand mb-3">Codigo ao vivo</h2>
+            <div className="min-w-0">
+              <h2 className="font-display text-base sm:text-lg font-semibold text-sand mb-3">Codigo ao vivo</h2>
               <LiveCode dist={dist} ph={ph} turb={turb} tds={tds} od={od} temp={temp} alert={alert} pumping={pumping} amostras={amostras} />
-              <p className="font-mono text-[10px] text-white/30 mt-2">Valores atualizam com a simulacao · arraste o sonar acima</p>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-white/10 px-4 sm:px-6 lg:px-10 py-3 font-mono text-[10px] text-white/30 flex justify-between gap-2">
-        <span>Blue Brilliant · Santos</span>
-        <span className="hidden sm:inline">Next.js · R3F</span>
+      <footer className="border-t border-white/10 px-3 sm:px-6 lg:px-10 py-3 font-mono text-[10px] text-white/30 flex flex-wrap justify-between gap-2">
+        <span>Blue Brilliant — Peixonautas</span>
+        <span className="hidden sm:inline">Parque Tecnologico de Santos</span>
       </footer>
     </div>
   );
