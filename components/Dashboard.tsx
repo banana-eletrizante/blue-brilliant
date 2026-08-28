@@ -142,24 +142,12 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 flex-wrap">
           <nav className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/10">
             {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={clsx(
-                  'font-mono text-[11px] px-2.5 py-1.5 rounded-md transition',
-                  tab === t.id ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand'
-                )}
-              >
+              <button key={t.id} onClick={() => setTab(t.id)} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-md transition', tab === t.id ? 'bg-teal text-navy-deep font-medium' : 'text-white/50 hover:text-sand')}>
                 {t.label}
               </button>
             ))}
           </nav>
-          <div
-            className={clsx(
-              'font-mono text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border',
-              alert ? 'border-coral/60 text-coral' : 'border-white/10 text-white/50'
-            )}
-          >
+          <div className={clsx('font-mono text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border', alert ? 'border-coral/60 text-coral' : 'border-white/10 text-white/50')}>
             <span className={clsx('w-1.5 h-1.5 rounded-full', alert ? 'bg-coral animate-pulse' : 'bg-teal')} />
             {alert ? 'Alerta' : 'OK'}
           </div>
@@ -177,43 +165,25 @@ export default function Dashboard() {
                 {metrics.map((m) => (
                   <div key={m.label} className="bg-navy-deep p-3">
                     <div className="font-mono text-[10px] text-white/40 uppercase">{m.label}</div>
-                    <div className="font-mono text-lg font-medium text-sand mt-0.5">
-                      {m.value}
-                      {m.unit && <span className="text-[11px] text-white/35 ml-0.5">{m.unit}</span>}
-                    </div>
-                    <div className="h-0.5 bg-white/10 mt-2 rounded overflow-hidden">
-                      <div className={clsx('h-full', m.color)} style={{ width: `${m.pct}%` }} />
-                    </div>
+                    <div className="font-mono text-lg font-medium text-sand mt-0.5">{m.value}{m.unit && <span className="text-[11px] text-white/35 ml-0.5">{m.unit}</span>}</div>
+                    <div className="h-0.5 bg-white/10 mt-2 rounded overflow-hidden"><div className={clsx('h-full', m.color)} style={{ width: `${m.pct}%` }} /></div>
                   </div>
                 ))}
               </div>
-
               <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-mono text-[11px] text-amber">Sonar · perimetro {perimetro} cm</span>
+                  <span className="font-mono text-[11px] text-amber">Sonar · {perimetro} cm</span>
                   <span className="font-mono text-sm text-sand">{dist} cm</span>
                 </div>
                 <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-full" />
-                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>
-                  {alert ? 'Objeto no perimetro - LED/buzzer ativos' : 'Perimetro livre'}
-                </p>
+                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta - LED/buzzer' : 'Perimetro livre'}</p>
               </div>
-
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
                   <span className="font-mono text-[11px] text-amber block mb-2">Agua</span>
                   <div className="flex flex-wrap gap-1.5">
                     {(Object.keys(PRESETS) as Preset[]).map((key) => (
-                      <button
-                        key={key}
-                        onClick={() => applyPreset(key)}
-                        className={clsx(
-                          'font-mono text-[11px] px-2.5 py-1 rounded border transition',
-                          preset === key ? 'border-teal text-teal bg-teal/10' : 'border-white/10 text-white/45 hover:text-sand'
-                        )}
-                      >
-                        {PRESETS[key].label}
-                      </button>
+                      <button key={key} onClick={() => applyPreset(key)} className={clsx('font-mono text-[11px] px-2.5 py-1 rounded border transition', preset === key ? 'border-teal text-teal bg-teal/10' : 'border-white/10 text-white/45 hover:text-sand')}>{PRESETS[key].label}</button>
                     ))}
                   </div>
                 </div>
@@ -224,18 +194,11 @@ export default function Dashboard() {
                     <div>Ultima: <span className="text-sand">{ultimaColeta}</span></div>
                     <div>Proxima: <span className="text-sand">{nextCycle}s</span></div>
                   </div>
-                  <button onClick={coletar} disabled={pumping} className="w-full font-mono text-[12px] bg-teal text-navy-deep font-medium py-2 rounded-md disabled:opacity-40">
-                    {pumping ? 'Filtrando...' : 'Coletar amostra'}
-                  </button>
+                  <button onClick={coletar} disabled={pumping} className="w-full font-mono text-[12px] bg-teal text-navy-deep font-medium py-2 rounded-md disabled:opacity-40">{pumping ? 'Filtrando...' : 'Coletar'}</button>
                 </div>
               </div>
-
               <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-28 overflow-y-auto flex-1">
-                {logs.map((l, i) => (
-                  <div key={i} className={clsx('py-0.5', l.warn ? 'text-coral' : 'text-teal/80')}>
-                    [{l.t}] {l.msg}
-                  </div>
-                ))}
+                {logs.map((l, i) => (<div key={i} className={clsx('py-0.5', l.warn ? 'text-coral' : 'text-teal/80')}>[{l.t}] {l.msg}</div>))}
               </div>
               <p className="font-mono text-[10px] text-white/30">{lat.toFixed(4)}, {lng.toFixed(4)} · Santos</p>
             </div>
@@ -244,38 +207,30 @@ export default function Dashboard() {
 
         {tab === 'schema' && (
           <div>
-            <h2 className="font-display text-lg font-semibold text-sand mb-1">Esquema eletronico</h2>
-            <p className="font-mono text-[12px] text-white/40 mb-5 max-w-xl">
-              Conexoes ESP32 com sensores, GPS, SD e bomba. Fios acendem no alerta e na coleta.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-display text-lg font-semibold text-sand">Esquema</h2>
+              <a href="https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json" className="font-mono text-[11px] text-teal underline" target="_blank" rel="noreferrer">diagram.json · Wokwi</a>
+            </div>
             <Schematic alert={alert} pumping={pumping} />
-            <p className="font-mono text-[11px] text-white/35 mt-4">
-              Wokwi:{' '}
-              <a href="https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json" className="text-teal underline" target="_blank" rel="noreferrer">diagram.json</a>
-              {' · '}
-              <a href="https://wokwi.com/projects/new/esp32" className="text-teal underline" target="_blank" rel="noreferrer">abrir simulador</a>
-            </p>
           </div>
         )}
 
         {tab === 'cycle' && (
           <div>
-            <h2 className="font-display text-lg font-semibold text-sand mb-1">Ciclo de operacao</h2>
-            <p className="font-mono text-[12px] text-white/40 mb-6">A cada ~3 s no firmware ESP32.</p>
+            <h2 className="font-display text-lg font-semibold text-sand mb-4">Ciclo</h2>
             <Flowchart />
           </div>
         )}
 
         {tab === 'files' && (
           <div>
-            <h2 className="font-display text-lg font-semibold text-sand mb-1">Arquivos</h2>
-            <p className="font-mono text-[12px] text-white/40 mb-5">Repositorio e entregaveis do prototipo.</p>
+            <h2 className="font-display text-lg font-semibold text-sand mb-4">Arquivos</h2>
             <div className="grid sm:grid-cols-2 gap-3 max-w-2xl">
               {[
                 { name: 'sketch.ino', desc: 'Firmware ESP32', href: 'https://github.com/banana-eletrizante/blue-brilliant/tree/main/firmware' },
                 { name: 'diagram.json', desc: 'Circuito Wokwi', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json' },
                 { name: 'ROTEIRO_PITCH.md', desc: 'Roteiro 3-4 min', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/docs/ROTEIRO_PITCH.md' },
-                { name: 'GitHub', desc: 'Codigo do site', href: 'https://github.com/banana-eletrizante/blue-brilliant' },
+                { name: 'GitHub', desc: 'Codigo', href: 'https://github.com/banana-eletrizante/blue-brilliant' },
               ].map((f) => (
                 <a key={f.name} href={f.href} target="_blank" rel="noreferrer" className="flex gap-3 p-4 rounded-xl border border-white/10 bg-navy/60 hover:border-teal/40 transition">
                   <span className="text-teal font-mono text-xs">↗</span>
@@ -291,7 +246,7 @@ export default function Dashboard() {
       </main>
 
       <footer className="border-t border-white/10 px-4 sm:px-6 lg:px-10 py-3 font-mono text-[10px] text-white/30 flex justify-between gap-2">
-        <span>Blue Brilliant · Parque Tecnologico de Santos</span>
+        <span>Blue Brilliant · Santos</span>
         <span className="hidden sm:inline">Next.js · R3F</span>
       </footer>
     </div>
