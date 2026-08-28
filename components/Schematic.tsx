@@ -5,107 +5,140 @@ type Props = { alert: boolean; pumping: boolean };
 export default function Schematic({ alert, pumping }: Props) {
   const hot = (id: string) => {
     if (alert && (id === 'led' || id === 'buzzer' || id === 'sonar' || id === 'esp')) return true;
-    if (pumping && (id === 'relay' || id === 'esp')) return true;
+    if (pumping && (id === 'relay' || id === 'esp' || id === 'pump')) return true;
     return false;
   };
 
   const wire = (active: boolean, color: string) =>
-    active ? color : 'rgba(239,231,216,0.12)';
+    active ? color : 'rgba(239,231,216,0.14)';
+  const sw = (active: boolean) => (active ? 2.4 : 1.3);
 
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-white/10 bg-[#071A2C] p-4 md:p-6">
-      <svg viewBox="0 0 720 420" className="w-full max-w-4xl mx-auto" aria-label="Esquema eletronico">
-        <path d="M400 100 H480" stroke={wire(hot('sonar'), '#E3A857')} strokeWidth={hot('sonar') ? 2.2 : 1.2} fill="none" />
-        <path d="M400 150 H500" stroke={wire(hot('led'), '#E0653B')} strokeWidth={hot('led') ? 2.2 : 1.2} fill="none" />
-        <path d="M400 190 H500" stroke={wire(hot('buzzer'), '#E0653B')} strokeWidth={hot('buzzer') ? 2.2 : 1.2} fill="none" />
-        <path d="M240 80 H120" stroke={wire(false, '#7FA3BE')} strokeWidth={1.2} fill="none" />
-        <path d="M240 140 H120" stroke={wire(false, '#7FA3BE')} strokeWidth={1.2} fill="none" />
-        <path d="M240 220 H120" stroke={wire(false, '#2FBE96')} strokeWidth={1.2} fill="none" />
-        <path d="M280 280 V320" stroke={wire(false, '#2FBE96')} strokeWidth={1.2} fill="none" />
-        <path d="M220 320 H360" stroke={wire(false, '#2FBE96')} strokeWidth={1.2} fill="none" />
-        <path d="M400 250 H500 V300" stroke={wire(hot('relay'), '#E3A857')} strokeWidth={hot('relay') ? 2.2 : 1.2} fill="none" />
+    <div className="w-full overflow-x-auto rounded-xl border border-white/10 bg-[#071A2C] p-3 sm:p-5">
+      <svg viewBox="0 0 760 460" className="w-full max-w-4xl mx-auto" aria-label="Esquema eletronico">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="1.5" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
 
-        <g transform="translate(240,60)">
-          <rect width="160" height="220" rx="6" fill="#1a1a1a" stroke={hot('esp') ? '#2FBE96' : '#333'} strokeWidth={hot('esp') ? 2 : 1} />
-          <rect x="60" y="-6" width="40" height="10" rx="2" fill="#2a2a2a" stroke="#555" />
-          <rect x="50" y="70" width="60" height="50" rx="3" fill="#111" stroke="#444" />
-          <text x="80" y="100" textAnchor="middle" fill="#2FBE96" fontSize="9" fontFamily="monospace">ESP32</text>
-          <path d="M70 40 Q80 20 90 40" fill="none" stroke="#666" strokeWidth="1.5" />
+        <path d="M410 95 H500" stroke={wire(hot('sonar'), '#E3A857')} strokeWidth={sw(hot('sonar'))} fill="none" filter={hot('sonar') ? 'url(#glow)' : undefined} />
+        <text x="450" y="88" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D5/D18</text>
+
+        <path d="M410 155 H530" stroke={wire(hot('led'), '#E0653B')} strokeWidth={sw(hot('led'))} fill="none" filter={hot('led') ? 'url(#glow)' : undefined} />
+        <text x="460" y="148" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D27</text>
+
+        <path d="M410 200 H530" stroke={wire(hot('buzzer'), '#E0653B')} strokeWidth={sw(hot('buzzer'))} fill="none" filter={hot('buzzer') ? 'url(#glow)' : undefined} />
+        <text x="460" y="193" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D14</text>
+
+        <path d="M250 75 H115" stroke={wire(false, '#7FA3BE')} strokeWidth={1.3} fill="none" />
+        <text x="170" y="68" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">RX2/TX2</text>
+
+        <path d="M250 145 H115" stroke={wire(false, '#7FA3BE')} strokeWidth={1.3} fill="none" />
+        <text x="170" y="138" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">SPI</text>
+
+        <path d="M250 230 H115" stroke={wire(false, '#2FBE96')} strokeWidth={1.3} fill="none" />
+        <text x="170" y="223" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D4</text>
+
+        <path d="M290 295 V340" stroke={wire(false, '#2FBE96')} strokeWidth={1.3} fill="none" />
+        <path d="M200 340 H420" stroke={wire(false, '#2FBE96')} strokeWidth={1.3} fill="none" />
+        <text x="300" y="333" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">ADC</text>
+
+        <path d="M410 260 H530 V310" stroke={wire(hot('relay'), '#E3A857')} strokeWidth={sw(hot('relay'))} fill="none" filter={hot('relay') ? 'url(#glow)' : undefined} />
+        <text x="460" y="253" fill="rgba(239,231,216,0.35)" fontSize="8" fontFamily="monospace">D13</text>
+
+        <g transform="translate(250,55)">
+          <rect width="160" height="230" rx="7" fill="#141414" stroke={hot('esp') ? '#2FBE96' : '#3a3a3a'} strokeWidth={hot('esp') ? 2.2 : 1.2} filter={hot('esp') ? 'url(#glow)' : undefined} />
+          <rect x="58" y="-7" width="44" height="11" rx="2" fill="#222" stroke="#555" />
+          <text x="80" y="8" textAnchor="middle" fill="rgba(239,231,216,0.3)" fontSize="7" fontFamily="monospace">USB</text>
+          <rect x="48" y="70" width="64" height="54" rx="3" fill="#0c0c0c" stroke="#3a3a3a" />
+          <text x="80" y="102" textAnchor="middle" fill="#2FBE96" fontSize="10" fontFamily="monospace" fontWeight="600">ESP32</text>
+          <path d="M68 40 Q80 18 92 40" fill="none" stroke="#555" strokeWidth="1.5" />
           {Array.from({ length: 15 }).map((_, i) => (
-            <rect key={`L${i}`} x="-4" y={12 + i * 13} width="8" height="5" rx="1" fill="#c9a84c" />
+            <rect key={`L${i}`} x="-5" y={14 + i * 13.5} width="9" height="5.5" rx="1" fill="#c9a84c" />
           ))}
           {Array.from({ length: 15 }).map((_, i) => (
-            <rect key={`R${i}`} x="156" y={12 + i * 13} width="8" height="5" rx="1" fill="#c9a84c" />
+            <rect key={`R${i}`} x="156" y={14 + i * 13.5} width="9" height="5.5" rx="1" fill="#c9a84c" />
           ))}
-          <text x="80" y="210" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">DevKit C</text>
+          <text x="80" y="218" textAnchor="middle" fill="rgba(239,231,216,0.45)" fontSize="8" fontFamily="monospace">DevKit C v4</text>
         </g>
 
-        <g transform="translate(20,40)">
-          <rect width="90" height="70" rx="4" fill="#0d2818" stroke="#2FBE96" strokeWidth="1" />
-          <rect x="10" y="12" width="50" height="35" rx="2" fill="#1a1a1a" stroke="#444" />
-          <circle cx="72" cy="28" r="10" fill="none" stroke="#7FA3BE" strokeWidth="1.5" />
-          <circle cx="72" cy="28" r="3" fill="#7FA3BE" />
-          <text x="45" y="62" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">NEO-6M</text>
+        <g transform="translate(15,35)">
+          <rect width="95" height="72" rx="5" fill="#0a1f14" stroke="#2FBE96" strokeWidth="1.2" />
+          <rect x="8" y="10" width="52" height="38" rx="2" fill="#111" stroke="#3a3a3a" />
+          <circle cx="75" cy="28" r="12" fill="none" stroke="#7FA3BE" strokeWidth="1.5" />
+          <circle cx="75" cy="28" r="3.5" fill="#7FA3BE" />
+          <text x="47" y="64" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">NEO-6M GPS</text>
         </g>
 
-        <g transform="translate(20,130)">
-          <rect width="90" height="50" rx="4" fill="#1a1520" stroke="#7FA3BE" strokeWidth="1" />
-          <rect x="15" y="10" width="55" height="30" rx="2" fill="#222" stroke="#555" />
-          <rect x="20" y="14" width="12" height="8" fill="#c9a84c" opacity="0.7" />
-          <text x="45" y="44" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">microSD</text>
+        <g transform="translate(15,130)">
+          <rect width="95" height="52" rx="5" fill="#16121c" stroke="#7FA3BE" strokeWidth="1.2" />
+          <rect x="14" y="10" width="58" height="28" rx="2" fill="#1a1a1a" stroke="#444" />
+          <rect x="20" y="14" width="14" height="9" fill="#c9a84c" opacity="0.75" />
+          <text x="47" y="46" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">microSD</text>
         </g>
 
-        <g transform="translate(25,210)">
-          <rect x="25" y="0" width="30" height="45" rx="3" fill="#2a2a2a" stroke="#2FBE96" />
-          <rect x="30" y="5" width="20" height="12" fill="#111" />
-          <line x1="30" y1="50" x2="30" y2="62" stroke="#888" />
-          <line x1="40" y1="50" x2="40" y2="62" stroke="#888" />
-          <line x1="50" y1="50" x2="50" y2="62" stroke="#888" />
-          <text x="40" y="78" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">DS18B20</text>
+        <g transform="translate(25,215)">
+          <rect x="28" y="0" width="32" height="48" rx="3" fill="#222" stroke="#2FBE96" strokeWidth="1.2" />
+          <rect x="33" y="5" width="22" height="14" fill="#0c0c0c" />
+          <line x1="33" y1="52" x2="33" y2="64" stroke="#777" strokeWidth="1.2" />
+          <line x1="44" y1="52" x2="44" y2="64" stroke="#777" strokeWidth="1.2" />
+          <line x1="55" y1="52" x2="55" y2="64" stroke="#777" strokeWidth="1.2" />
+          <text x="44" y="80" textAnchor="middle" fill="rgba(239,231,216,0.55)" fontSize="8" fontFamily="monospace">DS18B20</text>
         </g>
 
         {[
-          { x: 180, label: 'pH' },
-          { x: 250, label: 'Turb' },
-          { x: 320, label: 'TDS' },
-          { x: 390, label: 'OD' },
+          { x: 175, label: 'pH', pin: 'D34' },
+          { x: 250, label: 'Turb', pin: 'D35' },
+          { x: 325, label: 'TDS', pin: 'D32' },
+          { x: 400, label: 'OD', pin: 'D33' },
         ].map((s) => (
-          <g key={s.label} transform={`translate(${s.x},330)`}>
-            <rect width="55" height="40" rx="4" fill="#0F2E4D" stroke="#2FBE96" strokeWidth="1" />
-            <circle cx="27" cy="16" r="7" fill="#071A2C" stroke="#2FBE96" />
-            <text x="27" y="34" textAnchor="middle" fill="rgba(239,231,216,0.6)" fontSize="8" fontFamily="monospace">{s.label}</text>
+          <g key={s.label} transform={`translate(${s.x},355)`}>
+            <rect width="58" height="48" rx="5" fill="#0c2438" stroke="#2FBE96" strokeWidth="1.2" />
+            <circle cx="29" cy="18" r="8" fill="#071A2C" stroke="#2FBE96" strokeWidth="1.2" />
+            <circle cx="29" cy="18" r="3" fill="#2FBE96" opacity="0.5" />
+            <text x="29" y="38" textAnchor="middle" fill="rgba(239,231,216,0.65)" fontSize="9" fontFamily="monospace">{s.label}</text>
+            <text x="29" y="58" textAnchor="middle" fill="rgba(239,231,216,0.3)" fontSize="7" fontFamily="monospace">{s.pin}</text>
           </g>
         ))}
 
-        <g transform="translate(500,50)">
-          <rect width="100" height="55" rx="4" fill="#1a1a1a" stroke={hot('sonar') ? '#E3A857' : '#555'} strokeWidth={hot('sonar') ? 2 : 1} />
-          <circle cx="30" cy="28" r="14" fill="#0a0a0a" stroke="#888" strokeWidth="2" />
-          <circle cx="70" cy="28" r="14" fill="#0a0a0a" stroke="#888" strokeWidth="2" />
-          <circle cx="30" cy="28" r="6" fill="#222" />
-          <circle cx="70" cy="28" r="6" fill="#222" />
-          <text x="50" y="70" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">HC-SR04</text>
+        <g transform="translate(520,45)">
+          <rect width="110" height="60" rx="5" fill="#141414" stroke={hot('sonar') ? '#E3A857' : '#444'} strokeWidth={hot('sonar') ? 2.2 : 1.2} filter={hot('sonar') ? 'url(#glow)' : undefined} />
+          <circle cx="32" cy="30" r="16" fill="#0a0a0a" stroke="#777" strokeWidth="2" />
+          <circle cx="78" cy="30" r="16" fill="#0a0a0a" stroke="#777" strokeWidth="2" />
+          <circle cx="32" cy="30" r="7" fill="#1a1a1a" />
+          <circle cx="78" cy="30" r="7" fill="#1a1a1a" />
+          <text x="55" y="75" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">HC-SR04</text>
         </g>
 
-        <g transform="translate(520,140)">
-          <circle cx="20" cy="14" r="12" fill={hot('led') ? '#E0653B' : '#3a1510'} stroke={hot('led') ? '#E0653B' : '#666'} strokeWidth={hot('led') ? 2 : 1} />
-          <line x1="14" y1="26" x2="10" y2="38" stroke="#888" />
-          <line x1="26" y1="26" x2="30" y2="38" stroke="#888" />
-          <text x="20" y="52" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">LED</text>
+        <g transform="translate(550,140)">
+          <circle cx="22" cy="16" r="14" fill={hot('led') ? '#E0653B' : '#2a1210'} stroke={hot('led') ? '#E0653B' : '#555'} strokeWidth={hot('led') ? 2.2 : 1.2} filter={hot('led') ? 'url(#glow)' : undefined} />
+          {hot('led') && (
+            <circle cx="22" cy="16" r="20" fill="none" stroke="#E0653B" strokeWidth="1" opacity="0.35" />
+          )}
+          <line x1="14" y1="30" x2="10" y2="42" stroke="#777" />
+          <line x1="30" y1="30" x2="34" y2="42" stroke="#777" />
+          <text x="22" y="56" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">LED</text>
         </g>
 
-        <g transform="translate(520,195)">
-          <circle cx="20" cy="16" r="14" fill="#1a1a1a" stroke={hot('buzzer') ? '#E0653B' : '#555'} strokeWidth={hot('buzzer') ? 2 : 1} />
-          <circle cx="20" cy="16" r="6" fill="#333" />
-          <text x="20" y="42" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">Buzzer</text>
+        <g transform="translate(550,200)">
+          <circle cx="22" cy="18" r="16" fill="#141414" stroke={hot('buzzer') ? '#E0653B' : '#444'} strokeWidth={hot('buzzer') ? 2.2 : 1.2} filter={hot('buzzer') ? 'url(#glow)' : undefined} />
+          <circle cx="22" cy="18" r="7" fill="#2a2a2a" />
+          <circle cx="22" cy="18" r="3" fill="#444" />
+          <text x="22" y="48" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">Buzzer</text>
         </g>
 
-        <g transform="translate(500,290)">
-          <rect width="110" height="55" rx="4" fill="#1a1520" stroke={hot('relay') ? '#E3A857' : '#555'} strokeWidth={hot('relay') ? 2 : 1} />
-          <rect x="10" y="12" width="35" height="30" rx="2" fill="#2a1a00" stroke="#E3A857" opacity="0.8" />
-          <text x="27" y="31" textAnchor="middle" fill="#E3A857" fontSize="7" fontFamily="monospace">RELE</text>
-          <rect x="55" y="15" width="45" height="24" rx="3" fill="#0F2E4D" stroke="#2FBE96" />
-          <text x="77" y="31" textAnchor="middle" fill="#2FBE96" fontSize="7" fontFamily="monospace">BOMBA</text>
-          <text x="55" y="70" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">eDNA</text>
+        <g transform="translate(520,300)">
+          <rect width="120" height="60" rx="5" fill="#16121c" stroke={hot('relay') ? '#E3A857' : '#444'} strokeWidth={hot('relay') ? 2.2 : 1.2} filter={hot('relay') ? 'url(#glow)' : undefined} />
+          <rect x="10" y="12" width="40" height="36" rx="3" fill="#2a1a00" stroke="#E3A857" opacity="0.9" />
+          <text x="30" y="34" textAnchor="middle" fill="#E3A857" fontSize="8" fontFamily="monospace">RELE</text>
+          <rect x="58" y="14" width="50" height="32" rx="3" fill="#0c2438" stroke="#2FBE96" strokeWidth={hot('pump') ? 2 : 1.2} />
+          <text x="83" y="34" textAnchor="middle" fill="#2FBE96" fontSize="8" fontFamily="monospace">BOMBA</text>
+          <text x="60" y="75" textAnchor="middle" fill="rgba(239,231,216,0.5)" fontSize="8" fontFamily="monospace">eDNA</text>
         </g>
       </svg>
     </div>
