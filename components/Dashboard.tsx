@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import Schematic from './Schematic';
@@ -9,7 +9,7 @@ import Flowchart from './Flowchart';
 const BuoyScene = dynamic(() => import('./BuoyScene'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[420px] md:h-[520px] rounded-xl bg-[#071A2C] border border-white/10 flex items-center justify-center">
+    <div className="w-full h-[440px] md:h-[540px] rounded-xl bg-[#040e18] border border-white/10 flex items-center justify-center">
       <span className="font-mono text-sm text-white/40 animate-pulse">Carregando 3D...</span>
     </div>
   ),
@@ -17,6 +17,8 @@ const BuoyScene = dynamic(() => import('./BuoyScene'), {
 
 type Preset = 'normal' | 'poluida' | 'algas' | 'acida';
 type Tab = 'sim' | 'schema' | 'cycle' | 'files';
+type LogLine = { t: string; msg: string; warn: boolean };
+type Sample = { t: string; dist: number; ph: number; turb: number; tds: number; od: number; temp: number; alert: boolean };
 
 const PRESETS: Record<Preset, { ph: number; turb: number; tds: number; od: number; temp: number; label: string }> = {
   normal:  { ph: 7.2, turb: 12,  tds: 180, od: 7.5, temp: 23.4, label: 'Limpa' },
@@ -37,6 +39,23 @@ function barColor(v: number, min: number, ok: [number, number], max: number) {
   return 'bg-teal';
 }
 
+function playBuzzer() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.08;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.stop(ctx.currentTime + 0.2);
+    setTimeout(() => ctx.close(), 300);
+  } catch { /* blocked until gesture */ }
+}
+
 export default function Dashboard() {
   const [dist, setDist] = useState(120);
   const [ph, setPh] = useState(7.2);
@@ -49,18 +68,29 @@ export default function Dashboard() {
   const [nextCycle, setNextCycle] = useState(60);
   const [pumping, setPumping] = useState(false);
   const [preset, setPreset] = useState<Preset>('normal');
-  const [logs, setLogs] = useState<{ t: string; msg: string; warn: boolean }[]>([]);
+  const [logs, setLogs] = useState<LogLine[]>([]);
+  const [samples, setSamples] = useState<Sample[]>([]);
   const [tab, setTab] = useState<Tab>('sim');
+  const [soundOn, setSoundOn] = useState(true);
   const [lat] = useState(-23.9608);
   const [lng] = useState(-46.3336);
+  const wasAlert = useRef(false);
 
   const perimetro = 60;
   const alert = dist < perimetro;
 
   const addLog = useCallback((msg: string, warn = false) => {
     const t = new Date().toLocaleTimeString('pt-BR');
-    setLogs((prev) => [{ t, msg, warn }, ...prev].slice(0, 10));
+    setLogs((prev) => [{ t, msg, warn }, ...prev].slice(0, 12));
   }, []);
+
+  useEffect(() => {
+    if (alert && !wasAlert.current && soundOn) {
+      playBuzzer();
+      addLog('ALERTA perimetro', true);
+    }
+    wasAlert.current = alert;
+  }, [alert, soundOn, addLog]);
 
   const coletar = useCallback(() => {
     if (pumping) return;
@@ -97,10 +127,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     const id = setInterval(() => {
+      const t = new Date().toLocaleTimeString('pt-BR');
+      setSamples((prev) =>
+        [{ t, dist, ph, turb, tds, od, temp, alert: dist < perimetro }, ...prev].slice(0, 200)
+      );
       addLog(`d=${dist}cm pH=${ph.toFixed(1)} turb=${Math.round(turb)}`, dist < perimetro);
     }, 5000);
     return () => clearInterval(id);
-  }, [dist, ph, turb, addLog]);
+  }, [dist, ph, turb, tds, od, temp, addLog]);
 
   useEffect(() => { addLog('Sistema online'); }, [addLog]);
 
@@ -109,6 +143,32 @@ export default function Dashboard() {
     setPreset(key);
     setPh(p.ph); setTurb(p.turb); setTds(p.tds); setOd(p.od); setTemp(p.temp);
     addLog(`Cenario: ${p.label.toLowerCase()}`);
+  };
+
+  const resetAll = () => {
+    setLogs([]);
+    setSamples([]);
+    setAmostras(0);
+    setUltimaColeta('-');
+    setNextCycle(60);
+    setDist(120);
+    applyPreset('normal');
+    addLog('Reset completo');
+  };
+
+  const exportCsv = () => {
+    const header = 'time,dist_cm,ph,turb_ntu,tds_ppm,od_mgL,temp_C,alert\n';
+    const rows = samples
+      .map((s) => `${s.t},${s.dist},${s.ph.toFixed(2)},${s.turb.toFixed(1)},${s.tds.toFixed(0)},${s.od.toFixed(2)},${s.temp.toFixed(1)},${s.alert ? 1 : 0}`)
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `blue-brilliant-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addLog(`CSV exportado (${samples.length} linhas)`);
   };
 
   const metrics = [
@@ -129,7 +189,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-white/10 px-4 sm:px-6 lg:px-10 py-4 flex flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-white/10 px-4 sm:px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-teal/20 border border-teal/40 flex items-center justify-center shrink-0">
             <span className="font-mono text-teal text-xs font-bold">BB</span>
@@ -147,6 +207,9 @@ export default function Dashboard() {
               </button>
             ))}
           </nav>
+          <button onClick={() => setSoundOn((v) => !v)} className={clsx('font-mono text-[11px] px-2.5 py-1.5 rounded-full border transition', soundOn ? 'border-teal/40 text-teal' : 'border-white/10 text-white/40')} title="Som do buzzer">
+            {soundOn ? 'Som ON' : 'Som OFF'}
+          </button>
           <div className={clsx('font-mono text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border', alert ? 'border-coral/60 text-coral' : 'border-white/10 text-white/50')}>
             <span className={clsx('w-1.5 h-1.5 rounded-full', alert ? 'bg-coral animate-pulse' : 'bg-teal')} />
             {alert ? 'Alerta' : 'OK'}
@@ -160,7 +223,7 @@ export default function Dashboard() {
             <div className="lg:col-span-7">
               <BuoyScene alert={alert} pumping={pumping} dist={dist} />
             </div>
-            <div className="lg:col-span-5 flex flex-col gap-4">
+            <div className="lg:col-span-5 flex flex-col gap-3">
               <div className="grid grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden">
                 {metrics.map((m) => (
                   <div key={m.label} className="bg-navy-deep p-3">
@@ -170,14 +233,16 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+
               <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-mono text-[11px] text-amber">Sonar · {perimetro} cm</span>
                   <span className="font-mono text-sm text-sand">{dist} cm</span>
                 </div>
                 <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} className="w-full" />
-                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta - LED/buzzer' : 'Perimetro livre'}</p>
+                <p className={clsx('font-mono text-[11px] mt-2', alert ? 'text-coral' : 'text-white/40')}>{alert ? 'Alerta — LED + buzzer' : 'Perimetro livre'}</p>
               </div>
+
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="border border-white/10 rounded-xl p-4 bg-navy/50">
                   <span className="font-mono text-[11px] text-amber block mb-2">Agua</span>
@@ -197,6 +262,12 @@ export default function Dashboard() {
                   <button onClick={coletar} disabled={pumping} className="w-full font-mono text-[12px] bg-teal text-navy-deep font-medium py-2 rounded-md disabled:opacity-40">{pumping ? 'Filtrando...' : 'Coletar'}</button>
                 </div>
               </div>
+
+              <div className="flex gap-2">
+                <button onClick={exportCsv} className="flex-1 font-mono text-[11px] py-2 rounded-md border border-white/10 text-white/60 hover:text-sand hover:border-teal/40 transition">Export CSV ({samples.length})</button>
+                <button onClick={resetAll} className="font-mono text-[11px] px-3 py-2 rounded-md border border-white/10 text-white/50 hover:text-coral hover:border-coral/40 transition">Reset</button>
+              </div>
+
               <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-28 overflow-y-auto flex-1">
                 {logs.map((l, i) => (<div key={i} className={clsx('py-0.5', l.warn ? 'text-coral' : 'text-teal/80')}>[{l.t}] {l.msg}</div>))}
               </div>
