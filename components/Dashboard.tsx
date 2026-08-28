@@ -291,11 +291,11 @@ export default function Dashboard() {
               </div>
 
               <div className="flex gap-2">
-                <button onClick={exportCsv} className="flex-1 font-mono text-[11px] py-2 rounded-md border border-white/10 text-white/60 hover:text-sand hover:border-teal/40 transition">Export CSV ({samples.length})</button>
+                <button onClick={exportCsv} className="flex-1 font-mono text-[11px] py-2 rounded-md border border-white/10 text-white/60 hover:text-sand hover:border-teal/40 transition">Baixar log CSV ({samples.length})</button>
                 <button onClick={resetAll} className="font-mono text-[11px] px-3 py-2 rounded-md border border-white/10 text-white/50 hover:text-coral hover:border-coral/40 transition">Reset</button>
               </div>
 
-              <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-24 sm:max-h-28 overflow-y-auto">
+              <div className="border border-white/10 rounded-xl p-3 bg-navy-deep font-mono text-[11px] max-h-40 sm:max-h-48 overflow-y-auto">
                 {logs.map((l, i) => (<div key={i} className={clsx('py-0.5', l.warn ? 'text-coral' : 'text-teal/80')}>[{l.t}] {l.msg}</div>))}
               </div>
               <p className="font-mono text-[10px] text-white/30">{lat.toFixed(4)}, {lng.toFixed(4)} · Santos · Peixonautas</p>
@@ -314,8 +314,9 @@ export default function Dashboard() {
                 </div>
               </div>
               <Schematic alert={alert} pumping={pumping} />
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button onClick={coletar} disabled={pumping} className="font-mono text-[11px] px-3 py-1.5 rounded-md bg-teal/20 text-teal border border-teal/30 disabled:opacity-40">{pumping ? 'Bomba...' : 'Testar eDNA'}</button>
+                <a href="https://github.com/banana-eletrizante/blue-brilliant" target="_blank" rel="noreferrer" className="font-mono text-[11px] text-teal underline">github.com/banana-eletrizante/blue-brilliant</a>
               </div>
             </div>
             <div className="min-w-0">
