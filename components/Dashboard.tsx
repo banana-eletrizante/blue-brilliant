@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
+import Schematic from './Schematic';
+import Flowchart from './Flowchart';
 
 const BuoyScene = dynamic(() => import('./BuoyScene'), {
   ssr: false,
@@ -75,10 +77,7 @@ export default function Dashboard() {
   useEffect(() => {
     const id = setInterval(() => {
       setNextCycle((n) => {
-        if (n <= 1) {
-          coletar();
-          return 60;
-        }
+        if (n <= 1) { coletar(); return 60; }
         return n - 1;
       });
     }, 1000);
@@ -98,26 +97,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      addLog(
-        `dist=${dist}cm ph=${ph.toFixed(2)} turb=${Math.round(turb)}NTU od=${od.toFixed(1)}mg/L`,
-        dist < perimetro
-      );
+      addLog(`dist=${dist}cm ph=${ph.toFixed(2)} turb=${Math.round(turb)}NTU od=${od.toFixed(1)}mg/L`, dist < perimetro);
     }, 4000);
     return () => clearInterval(id);
   }, [dist, ph, turb, od, addLog]);
 
-  useEffect(() => {
-    addLog('Sistema iniciado — telemetria ativa');
-  }, [addLog]);
+  useEffect(() => { addLog('Sistema iniciado — telemetria ativa'); }, [addLog]);
 
   const applyPreset = (key: Preset) => {
     const p = PRESETS[key];
     setPreset(key);
-    setPh(p.ph);
-    setTurb(p.turb);
-    setTds(p.tds);
-    setOd(p.od);
-    setTemp(p.temp);
+    setPh(p.ph); setTurb(p.turb); setTds(p.tds); setOd(p.od); setTemp(p.temp);
     addLog(`Cenário alterado: ${p.label.toLowerCase()}`);
   };
 
@@ -134,43 +124,25 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <header className="border-b border-white/10 px-6 md:px-[6vw] py-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-xs tracking-[0.14em] text-teal uppercase mb-2">
-            Blue Brilliant · Sistema de monitoramento aquático
-          </p>
+          <p className="font-mono text-xs tracking-[0.14em] text-teal uppercase mb-2">Blue Brilliant · Sistema de monitoramento aquático</p>
           <h1 className="font-display text-2xl md:text-4xl font-semibold text-sand max-w-2xl leading-tight">
             Boia de delimitação de biodiversidade e detecção de espécies invasoras
           </h1>
         </div>
-        <div
-          className={clsx(
-            'font-mono text-xs flex items-center gap-2 px-3.5 py-2 rounded-full border',
-            alert ? 'border-coral text-coral' : 'border-white/10 text-sand-dim'
-          )}
-        >
-          <span
-            className={clsx(
-              'w-2 h-2 rounded-full',
-              alert ? 'bg-coral shadow-[0_0_10px_#E0653B] animate-pulse' : 'bg-teal shadow-[0_0_8px_#2FBE96]'
-            )}
-          />
+        <div className={clsx('font-mono text-xs flex items-center gap-2 px-3.5 py-2 rounded-full border', alert ? 'border-coral text-coral' : 'border-white/10 text-sand-dim')}>
+          <span className={clsx('w-2 h-2 rounded-full', alert ? 'bg-coral shadow-[0_0_10px_#E0653B] animate-pulse' : 'bg-teal shadow-[0_0_8px_#2FBE96]')} />
           {alert ? 'Objeto detectado' : 'Perímetro livre'}
         </div>
       </header>
 
       <main className="px-6 md:px-[6vw] pb-16">
         <section className="grid lg:grid-cols-2 gap-10 py-10 border-b border-white/10 items-center">
-          <div className="relative">
-            <BuoyScene alert={alert} pumping={pumping} dist={dist} />
-          </div>
+          <div className="relative"><BuoyScene alert={alert} pumping={pumping} dist={dist} /></div>
           <div>
             <span className="font-mono text-xs text-amber tracking-wider">Como funciona</span>
-            <h2 className="font-display text-xl md:text-2xl font-semibold mt-2 mb-4">
-              Um instrumento, três frentes
-            </h2>
+            <h2 className="font-display text-xl md:text-2xl font-semibold mt-2 mb-4">Um instrumento, três frentes</h2>
             <p className="text-sand-dim text-[15px] leading-relaxed mb-3 max-w-md">
-              O sonar delimita um perímetro físico e sinaliza quando algo o cruza. Os sensores leem
-              continuamente a condição química da água. A bomba de eDNA coleta amostras periódicas
-              para identificar espécies que os outros sensores não conseguem ver.
+              O sonar delimita um perímetro físico e sinaliza quando algo o cruza. Os sensores leem continuamente a condição química da água. A bomba de eDNA coleta amostras periódicas para identificar espécies que os outros sensores não conseguem ver.
             </p>
             <div className="flex flex-wrap gap-4 mt-5 font-mono text-xs text-sand-dim">
               <div>Lat: <span className="text-sand">{lat.toFixed(4)}</span></div>
@@ -184,10 +156,7 @@ export default function Dashboard() {
           {metrics.map((m) => (
             <div key={m.label} className="bg-navy-deep p-4 md:p-5">
               <div className="font-mono text-[11px] text-sand-dim uppercase tracking-wider">{m.label}</div>
-              <div className="font-mono text-2xl font-medium mt-1.5">
-                {m.value}
-                {m.unit && <span className="text-sm text-mist ml-1">{m.unit}</span>}
-              </div>
+              <div className="font-mono text-2xl font-medium mt-1.5">{m.value}{m.unit && <span className="text-sm text-mist ml-1">{m.unit}</span>}</div>
               <div className="h-[3px] bg-white/10 mt-2.5 rounded overflow-hidden">
                 <div className={clsx('h-full transition-all duration-400', m.color)} style={{ width: `${m.pct}%` }} />
               </div>
@@ -198,47 +167,24 @@ export default function Dashboard() {
         <section className="py-10 border-b border-white/10">
           <span className="font-mono text-xs text-amber tracking-wider">Sonar · perímetro</span>
           <h2 className="font-display text-xl font-semibold mt-1 mb-2">Delimitação e alerta de invasão</h2>
-          <p className="text-sand-dim text-[15px] max-w-xl mb-6">
-            Quando a distância medida cai abaixo de {perimetro} cm, o sistema aciona LED e buzzer.
-          </p>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-6">Quando a distância medida cai abaixo de {perimetro} cm, o sistema aciona LED e buzzer.</p>
           <div className="max-w-lg mb-5">
-            <div className="flex justify-between font-mono text-xs text-sand-dim mb-2">
-              <span>Distância do objeto</span>
-              <span>{dist} cm</span>
-            </div>
+            <div className="flex justify-between font-mono text-xs text-sand-dim mb-2"><span>Distância do objeto</span><span>{dist} cm</span></div>
             <input type="range" min={10} max={200} value={dist} onChange={(e) => setDist(Number(e.target.value))} />
           </div>
-          <div
-            className={clsx(
-              'flex items-center gap-3 px-4 py-3 rounded-lg border font-mono text-sm transition-all',
-              alert ? 'bg-coral/10 border-coral text-coral' : 'bg-white/[0.03] border-white/10 text-sand-dim'
-            )}
-          >
+          <div className={clsx('flex items-center gap-3 px-4 py-3 rounded-lg border font-mono text-sm transition-all', alert ? 'bg-coral/10 border-coral text-coral' : 'bg-white/[0.03] border-white/10 text-sand-dim')}>
             <span className={clsx('w-2.5 h-2.5 rounded-full border-2', alert ? 'bg-coral border-coral' : 'border-teal')} />
-            {alert
-              ? `Alerta: objeto dentro do perímetro de ${perimetro} cm — LED e buzzer acionados`
-              : `Nenhum objeto dentro do perímetro de ${perimetro} cm`}
+            {alert ? `Alerta: objeto dentro do perímetro de ${perimetro} cm — LED e buzzer acionados` : `Nenhum objeto dentro do perímetro de ${perimetro} cm`}
           </div>
         </section>
 
         <section className="py-10 border-b border-white/10">
           <span className="font-mono text-xs text-amber tracking-wider">Qualidade da água</span>
           <h2 className="font-display text-xl font-semibold mt-1 mb-2">Cenários de campo</h2>
-          <p className="text-sand-dim text-[15px] max-w-xl mb-5">
-            Presets que alteram todas as leituras químicas simultaneamente.
-          </p>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-5">Presets que alteram todas as leituras químicas simultaneamente.</p>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(PRESETS) as Preset[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => applyPreset(key)}
-                className={clsx(
-                  'font-mono text-xs px-3.5 py-2 rounded-md border transition-all',
-                  preset === key
-                    ? 'border-teal text-teal bg-teal/10'
-                    : 'border-white/10 text-sand-dim hover:border-teal hover:text-sand'
-                )}
-              >
+              <button key={key} onClick={() => applyPreset(key)} className={clsx('font-mono text-xs px-3.5 py-2 rounded-md border transition-all', preset === key ? 'border-teal text-teal bg-teal/10' : 'border-white/10 text-sand-dim hover:border-teal hover:text-sand')}>
                 {PRESETS[key].label}
               </button>
             ))}
@@ -248,26 +194,14 @@ export default function Dashboard() {
         <section className="py-10 border-b border-white/10">
           <span className="font-mono text-xs text-amber tracking-wider">DNA ambiental</span>
           <h2 className="font-display text-xl font-semibold mt-1 mb-2">Auto-amostrador de eDNA</h2>
-          <p className="text-sand-dim text-[15px] max-w-xl mb-6">
-            A bomba filtra água em uma membrana (0,22–0,45 µm). O filtro é recolhido e analisado em
-            laboratório por PCR ou sequenciamento. Cada amostra nasce com GPS e timestamp.
-          </p>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-6">A bomba filtra água em uma membrana (0,22–0,45 µm). O filtro é recolhido e analisado em laboratório por PCR ou sequenciamento. Cada amostra nasce com GPS e timestamp.</p>
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="flex flex-col items-center gap-4">
               <div className="relative w-32 h-32 rounded-full border-2 border-white/10 flex items-center justify-center overflow-hidden">
-                <div
-                  className="absolute bottom-0 left-0 right-0 bg-amber/40 transition-all duration-[1800ms] linear"
-                  style={{ height: pumping ? '85%' : amostras > 0 ? '40%' : '0%' }}
-                />
-                <span className="font-mono text-[11px] text-sand-dim z-10">
-                  {pumping ? 'Filtrando…' : amostras > 0 ? 'Filtro pronto' : 'Filtro limpo'}
-                </span>
+                <div className="absolute bottom-0 left-0 right-0 bg-amber/40 transition-all duration-[1800ms] linear" style={{ height: pumping ? '85%' : amostras > 0 ? '40%' : '0%' }} />
+                <span className="font-mono text-[11px] text-sand-dim z-10">{pumping ? 'Filtrando…' : amostras > 0 ? 'Filtro pronto' : 'Filtro limpo'}</span>
               </div>
-              <button
-                onClick={coletar}
-                disabled={pumping}
-                className="font-mono text-sm bg-teal text-navy-deep font-medium px-5 py-2.5 rounded-md disabled:opacity-40 hover:opacity-90 transition"
-              >
+              <button onClick={coletar} disabled={pumping} className="font-mono text-sm bg-teal text-navy-deep font-medium px-5 py-2.5 rounded-md disabled:opacity-40 hover:opacity-90 transition">
                 {pumping ? 'Coletando…' : 'Simular coleta de amostra'}
               </button>
             </div>
@@ -280,19 +214,60 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="py-10">
+        <section className="py-10 border-b border-white/10">
           <span className="font-mono text-xs text-amber tracking-wider">Telemetria</span>
           <h2 className="font-display text-xl font-semibold mt-1 mb-2">Log de eventos</h2>
-          <p className="text-sand-dim text-[15px] max-w-xl mb-5">
-            Feed equivalente ao que a boia envia via WiFi para o painel remoto.
-          </p>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-5">Feed equivalente ao que a boia envia via WiFi para o painel remoto.</p>
           <div className="bg-navy-deep border border-white/10 rounded-lg p-4 font-mono text-xs max-h-56 overflow-y-auto">
             {logs.map((l, i) => (
-              <div key={i} className={clsx('py-1 border-b border-white/5 last:border-0', l.warn ? 'text-coral' : 'text-teal')}>
-                [{l.t}] {l.msg}
-              </div>
+              <div key={i} className={clsx('py-1 border-b border-white/5 last:border-0', l.warn ? 'text-coral' : 'text-teal')}>[{l.t}] {l.msg}</div>
             ))}
           </div>
+        </section>
+
+        <section className="py-10 border-b border-white/10">
+          <span className="font-mono text-xs text-amber tracking-wider">Hardware</span>
+          <h2 className="font-display text-xl font-semibold mt-1 mb-2">Esquema eletrônico</h2>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-6">Mapa de conexões do protótipo. Os fios se iluminam no alerta de perímetro ou na coleta de eDNA.</p>
+          <Schematic alert={alert} pumping={pumping} />
+          <p className="font-mono text-[11px] text-mist mt-4">
+            Diagrama completo:{' '}
+            <a href="https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json" target="_blank" rel="noreferrer" className="text-teal underline">diagram.json</a>
+            {' · '}Importe em{' '}
+            <a href="https://wokwi.com/projects/new/esp32" target="_blank" rel="noreferrer" className="text-teal underline">wokwi.com</a>
+          </p>
+        </section>
+
+        <section className="py-10 border-b border-white/10">
+          <span className="font-mono text-xs text-amber tracking-wider">Firmware</span>
+          <h2 className="font-display text-xl font-semibold mt-1 mb-2">Ciclo de operação</h2>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-6">A cada ~3 segundos o ESP32 executa este ciclo autônomo.</p>
+          <Flowchart />
+        </section>
+
+        <section className="py-10">
+          <span className="font-mono text-xs text-amber tracking-wider">Entregáveis</span>
+          <h2 className="font-display text-xl font-semibold mt-1 mb-2">Arquivos do projeto</h2>
+          <p className="text-sand-dim text-[15px] max-w-xl mb-6">Firmware, circuito Wokwi, relatório e roteiro de pitch.</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[
+              { name: 'sketch.ino', desc: 'Firmware ESP32 completo', href: 'https://github.com/banana-eletrizante/blue-brilliant/tree/main/firmware' },
+              { name: 'diagram.json', desc: 'Circuito para importar no Wokwi', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/firmware/diagram.json' },
+              { name: 'relatorio.docx', desc: 'Documento técnico funcional', href: 'https://github.com/banana-eletrizante/blue-brilliant' },
+              { name: 'ROTEIRO_PITCH.md', desc: 'Roteiro de fala 3–4 min', href: 'https://github.com/banana-eletrizante/blue-brilliant/blob/main/docs/ROTEIRO_PITCH.md' },
+            ].map((f) => (
+              <a key={f.name} href={f.href} target="_blank" rel="noreferrer" className="flex items-start gap-3 p-4 rounded-xl border border-white/10 bg-navy hover:border-teal/50 transition">
+                <span className="font-mono text-teal text-xs mt-0.5">↗</span>
+                <div>
+                  <div className="font-mono text-sm text-sand">{f.name}</div>
+                  <div className="font-mono text-[11px] text-sand-dim mt-0.5">{f.desc}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+          <p className="font-mono text-[11px] text-mist mt-5">
+            Simulação neste site = comportamento funcional. Emulação ciclo-a-ciclo do ESP32 como no Wokwi: use o diagram.json no simulador oficial.
+          </p>
         </section>
       </main>
 
